@@ -4,6 +4,13 @@ class Api::CoinsController < ApplicationController
   BASE_URL = 'https://api.coinmarketcap.com/v1/ticker/'
 
   def index
+    coins = HTTParty.get(BASE_URL)
+    user_coins = current_user.coins
+    user_coins.each do |coin|
+      res_coin = coins.find { |c| c['id'] == coin.cmc_id }
+      coin.update(price: res_coin['price_usd']) if res_coin
+    end
+
     render json: current_user.coins
   end
 
@@ -16,6 +23,7 @@ class Api::CoinsController < ApplicationController
         user_id: current_user.id
       )
       watched.update(initial_price: coin.price) if watched.initial_price.nil?
+      render json: coin
     else
       render json: { errors: 'Coin Not Found' }, status: 422
     end
